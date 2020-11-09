@@ -1,0 +1,10 @@
+version: '2'
+services:
+  distribuida:
+    image: distribuida
+    container_name: distribuida
+    volumes:
+      - $PWD/Documentos:/Documentos
+      #- $PWD/gcc:/usr/local/bin
+    stdin_open: true 
+    tty: true        
