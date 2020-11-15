@@ -1,8 +1,8 @@
 version: '2'
 services:
   distribuida:
-    image: distribuida
-    container_name: distribuida
+    image: cdi
+    container_name: cdi
     volumes:
       - $PWD/Documentos:/Documentos
       #- $PWD/gcc:/usr/local/bin
