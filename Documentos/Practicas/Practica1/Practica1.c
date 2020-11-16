@@ -2,12 +2,14 @@
 #include <stdlib.h>
 #include <mpi.h>
 
-#define TAG_VUELTAUNO 1
-#define TAG_VUELTADOS 2
+#define TAG_VUELTAUNO 4
+#define TAG_VUELTADOS 5
+#define ATTACT 1
+#define REGRET 2
 
 //Estructuras
 const int GENERALS = 2; // cuenta desde 0 i.e son 3
-int plan[3];            // 0 -> No ataca, 1 -> ataca
+int plan[3];            // 2 -> No ataca, 1 -> ataca
 int reportedPlan[3][3];
 int majorityPlan[3];
 
@@ -18,9 +20,9 @@ int choose(int attact, int reject)
 {
     if (reject >= attact)
     {
-        return 0;
+        return REGRET;
     }
-    return 1;
+    return ATTACT;
 }
 
 /**
@@ -33,21 +35,21 @@ int majority(int plan, int reportedPlan[][3], int general, int generals)
     for (int i = 0; i < generals; i++)
     {
         //Cuenta reportados
-        if (reportedPlan[i][general] == 1)
+        if (reportedPlan[i][general] == ATTACT)
         {
             attact++;
         }
-        else if (reportedPlan[i][general] == 0)
+        else if (reportedPlan[i][general] == REGRET)
         {
             reject++;
         }
 
         //Cuenta el propio
-        if (plan == 1)
+        if (plan == ATTACT)
         {
             attact++;
         }
-        else if(plan == 0)
+        else if(plan == REGRET)
         {
             reject++;
         }
@@ -66,11 +68,11 @@ int majorityFinal(int majorityPlan[], int generals)
     for (int i = 0; i < generals; i++)
     {
         //Cuenta reportados
-        if (majorityPlan[i] == 1)
+        if (majorityPlan[i] == ATTACT)
         {
             attact++;
         }
-        else
+        else if(majorityPlan[i] == REGRET)
         {
             reject++;
         }
@@ -144,10 +146,35 @@ void firstVote(){
 /**
  *Second vote
 */
-int secondVote(int rank){
+void secondVote(int rank){
     majorityPlan[rank] = plan[rank];
-    return majorityFinal(majorityPlan, GENERALS);
+    int accion = majorityFinal(majorityPlan, GENERALS);
+    printf("\nNodo: %d, accion: %d\n", rank, accion);
 }
+
+/**
+ * Algoritmo generales 
+*/
+int generales(int argc, char **argv){
+    int size, rank;
+    MPI_Init(&argc, &argv);
+    MPI_Comm_size(MPI_COMM_WORLD, &size);
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+
+    int input = *argv[rank+1] - '0';
+    plan[rank] = input;
+
+
+    firstRound(rank);
+    secondRound(rank);
+    firstVote();
+    secondVote(rank);
+
+    MPI_Finalize();
+    return 0;
+
+}
+
 
 
 
@@ -160,7 +187,7 @@ void test_firstRound(int rank){
 void test_secondRound(int rank){
     plan[0]=1;
     plan[1]=1;
-    plan[2]=0;
+    plan[2]=1;
     secondRound(rank);
 
     printf("\nNodo: %d ==\n", rank);
@@ -178,35 +205,44 @@ void test_firstVote(int rank){
     secondRound(rank);
     firstVote();
 
-    printf("\nNodo: %d ==\n", rank);
+    char majorityPlanCadena[3];
+    
     for (int i = 0; i < 3; i++)
     {
-        printf("algo: %d", majorityPlan[i]);
+        majorityPlanCadena[i] = majorityPlan[i] + '0';
     }
+    printf("\nNodo: %d, majorityPlan: [%s]\n", rank, majorityPlanCadena);
     
 }
 
-int main(int argc, char **argv)
-{
+/**
+ *  Test 
+*/
+int test(int argc, char **argv){
     int size, rank;
     MPI_Init(&argc, &argv);
     MPI_Comm_size(MPI_COMM_WORLD, &size);
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
-    plan[0] = 1;
-    plan[1] = 0;
-    plan[2] = 1;
-
-    //test_secondRound(rank);
-    firstRound(rank);
-    secondRound(rank);
-    firstVote();
-    int accion = secondVote(rank);
+    int input = *argv[rank+1] - '0';
+    plan[rank] = input;    
 
 
-    printf("\nNodo: %d, accion: %d\n", rank, accion);
+    //Codigo a probar
 
- 
+    test_firstVote(rank);
+
+    //Fin del test
+
     MPI_Finalize();
+    return 0;    
+}
+
+
+int main(int argc, char **argv)
+{
+    //test(argc,argv);
+    generales(argc, argv);
+
     return 0;
 }
