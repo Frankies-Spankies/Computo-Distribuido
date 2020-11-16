@@ -5,15 +5,27 @@
 #define TAG_VUELTAUNO 1
 #define TAG_VUELTADOS 2
 
+//Estructuras
+const int GENERALS = 2; // cuenta desde 0 i.e son 3
+int plan[3];            // 0 -> No ataca, 1 -> ataca
+int reportedPlan[3][3];
+int majorityPlan[3];
+
+/** 
+ * Choose
+*/
 int choose(int attact, int reject)
 {
-    if (attact > reject)
+    if (reject >= attact)
     {
-        return 1;
+        return 0;
     }
-    return 0;
+    return 1;
 }
 
+/**
+ *  Majority
+*/
 int majority(int plan, int reportedPlan[][3], int general, int generals)
 {
     int attact = 0;
@@ -25,7 +37,7 @@ int majority(int plan, int reportedPlan[][3], int general, int generals)
         {
             attact++;
         }
-        else if (reportedPlan[i][general] == 1)
+        else if (reportedPlan[i][general] == 0)
         {
             reject++;
         }
@@ -35,15 +47,18 @@ int majority(int plan, int reportedPlan[][3], int general, int generals)
         {
             attact++;
         }
-        if (reportedPlan[i][general] == 1)
+        else if(plan == 0)
         {
             reject++;
         }
 
-        choose(attact, reject);
+        return choose(attact, reject);
     }
 }
 
+/**
+ *  Final Majority
+*/
 int majorityFinal(int majorityPlan[], int generals)
 {
     int attact = 0;
@@ -60,30 +75,15 @@ int majorityFinal(int majorityPlan[], int generals)
             reject++;
         }
 
-        choose(attact, reject);
+        return choose(attact, reject);
     }
 }
 
-int main(int argc, char **argv)
-{
-    // Inicio OpenMPI
-    int size, rank;
-    MPI_Init(&argc, &argv);
-    MPI_Comm_size(MPI_COMM_WORLD, &size);
-    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-    //Ejecutar
 
-    //Etructuras
-    const int GENERALS = 2; // cuenta desde 0 i.e son 3
-    int eleccion = 1;  // 0 -> No ataca, 1 -> ataca
-    int plan[3];
-    int reportedPlan[3][3];
-    int majorityPlan[3];
-
-    /* Asignacion por nodo */
-    plan[rank] = 1;
-
-    /* Primera vuelta */
+/**
+ * Primera vuela 
+*/
+void firstRound(int rank){
     //Envia
     for (int g = 0; g <= GENERALS; g++)
     {
@@ -101,45 +101,112 @@ int main(int argc, char **argv)
             MPI_Recv(&plan[g], 1, MPI_INT, g, TAG_VUELTAUNO, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
         }
     }
+}
 
-    /* Segunda vuelta */
+/** 
+ * Segunda vuelta 
+*/
+void secondRound(int rank){
     //Envia
     for (int g = 0; g <= GENERALS; g++)
     {
         if (g != rank)
         {
-            //Envia arreglo planes
-            for (int gp = 0; gp < GENERALS; gp++)
+            for (int gp = 0; gp <= GENERALS; gp++)
             {
                 MPI_Send(&plan[g], 1, MPI_INT, gp, TAG_VUELTAUNO, MPI_COMM_WORLD);
             }
         }
     }
-
-    //Recive
+    //Recibe
     for (int g = 0; g <= GENERALS; g++)
     {
         if (g != rank)
         {
-            //Envia arreglo planes
-            for (int gp = 0; gp < GENERALS; gp++)
+            for (int gp = 0; gp <= GENERALS; gp++)
             {
                 MPI_Recv(&reportedPlan[g][gp], 1, MPI_INT, gp, TAG_VUELTAUNO, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
             }
         }
     }
+}
 
-    /* Primer voto */
+/**
+ * First vote 
+*/
+void firstVote(){
     for (int g = 0; g <= GENERALS; g++)
     {
         majorityPlan[g] = majority(plan[g], reportedPlan, g, GENERALS);
     }
+}
 
-    /* Segundo voto */
+/**
+ *Second vote
+*/
+int secondVote(int rank){
     majorityPlan[rank] = plan[rank];
     return majorityFinal(majorityPlan, GENERALS);
+}
 
-    //Fin de ejecucion
+
+
+void test_firstRound(int rank){
+    firstRound(rank);
+    printf("\nNodo: %d, accion:%d\n", rank, plan[rank] );
+    
+}
+
+void test_secondRound(int rank){
+    plan[0]=1;
+    plan[1]=1;
+    plan[2]=0;
+    secondRound(rank);
+
+    printf("\nNodo: %d ==\n", rank);
+    for (int f = 0; f < 3; f++)
+    {
+        for (int c = 0; c < 3; c++){
+            printf("%d", reportedPlan[f][c]);
+        }
+        printf("\n");
+    }
+}
+
+void test_firstVote(int rank){
+    firstRound(rank);
+    secondRound(rank);
+    firstVote();
+
+    printf("\nNodo: %d ==\n", rank);
+    for (int i = 0; i < 3; i++)
+    {
+        printf("algo: %d", majorityPlan[i]);
+    }
+    
+}
+
+int main(int argc, char **argv)
+{
+    int size, rank;
+    MPI_Init(&argc, &argv);
+    MPI_Comm_size(MPI_COMM_WORLD, &size);
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+
+    plan[0] = 1;
+    plan[1] = 0;
+    plan[2] = 1;
+
+    //test_secondRound(rank);
+    firstRound(rank);
+    secondRound(rank);
+    firstVote();
+    int accion = secondVote(rank);
+
+
+    printf("\nNodo: %d, accion: %d\n", rank, accion);
+
+ 
     MPI_Finalize();
     return 0;
 }
