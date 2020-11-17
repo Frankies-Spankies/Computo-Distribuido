@@ -13,6 +13,21 @@ int plan[3];            // 2 -> No ataca, 1 -> ataca
 int reportedPlan[3][3];
 int majorityPlan[3];
 
+void f_bizantino_2()
+{
+    for (int i = 0; i <= GENERALS; i++)
+    {
+        if (plan[i] == ATTACT)
+        {
+            plan[i] = REGRET;
+        }else if (plan[i] == REGRET)
+        {
+            plan[i] = ATTACT;
+        }
+    }
+    
+}
+
 /** 
  * Choose
 */
@@ -32,18 +47,18 @@ int majority(int plan, int reportedPlan[][3], int general, int generals)
 {
     int attact = 0;
     int reject = 0;
-    for (int i = 0; i < generals; i++)
+    for (int i = 0; i <= generals; i++)
     {
         //Cuenta reportados
-        if (reportedPlan[i][general] == ATTACT)
+        if (reportedPlan[general][i] == ATTACT)
         {
             attact++;
         }
-        else if (reportedPlan[i][general] == REGRET)
+        else if (reportedPlan[general][i] == REGRET)
         {
             reject++;
         }
-
+    }
         //Cuenta el propio
         if (plan == ATTACT)
         {
@@ -53,9 +68,8 @@ int majority(int plan, int reportedPlan[][3], int general, int generals)
         {
             reject++;
         }
-
-        return choose(attact, reject);
-    }
+        
+    return choose(attact, reject);
 }
 
 /**
@@ -65,7 +79,7 @@ int majorityFinal(int majorityPlan[], int generals)
 {
     int attact = 0;
     int regret = 0;
-    for (int i = 0; i < generals; i++)
+    for (int i = 0; i <= generals; i++)
     {
         //Cuenta reportados
         if (majorityPlan[i] == ATTACT)
@@ -77,13 +91,13 @@ int majorityFinal(int majorityPlan[], int generals)
             regret++;
         }
 
-        return choose(attact, regret);
     }
+    return choose(attact, regret);
 }
 
 
 /**
- * Primera vuela 
+ * Primera vuelta 
 */
 void firstRound(int rank){
     //Envia
@@ -172,8 +186,9 @@ int generales(int argc, char **argv){
     MPI_Comm_size(MPI_COMM_WORLD, &size);
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
-    int input = *argv[rank+1] - '0';
-    plan[rank] = input;
+    int election = *argv[2(rank+1)-1] - '0';
+    char bizantino = *argv[2(rank+1)]
+    plan[rank] = election;
 
 
     firstRound(rank);
@@ -243,8 +258,8 @@ int test(int argc, char **argv){
     MPI_Comm_size(MPI_COMM_WORLD, &size);
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
-    int input = *argv[rank+1] - '0';
-    plan[rank] = input;    
+    int election = *argv[rank+1] - '0';
+    plan[rank] = election;    
 
 
     //Codigo a probar
