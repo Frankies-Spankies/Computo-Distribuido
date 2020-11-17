@@ -136,7 +136,7 @@ void secondRound(int rank){
             {
                 if (gp != g)//No se quiere recibir el plan de g
                 {
-                    MPI_Recv(&reportedPlan[g][gp], 1, MPI_INT, gp, TAG_VUELTADOS, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+                    MPI_Recv(&reportedPlan[g][gp], 1, MPI_INT, g, gp, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
                 }
                 
             }
