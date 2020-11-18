@@ -1,8 +1,0 @@
-4 1 L 1 L 1 L 1 L
-4 2 L 1 L 1 L 1 L
-4 1 L 2 L 1 L 1 L
-4 1 L 1 L 2 L 2 L
-4 2 L 2 L 1 L 1 L
-4 2 L 1 L 2 L 2 L
-4 1 L 2 L 2 L 2 L
-4 2 L 2 L 2 L 2 L
