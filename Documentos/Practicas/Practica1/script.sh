@@ -1,1 +1,0 @@
-cat casoideal.txt | xargs -p -L1 mpirun --allow-run-as-root --oversubscribe -np 3 ./a.out
