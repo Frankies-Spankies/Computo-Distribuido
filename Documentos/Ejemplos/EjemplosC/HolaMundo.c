@@ -1,15 +1,15 @@
 #include <stdio.h>
+#include <stdlib.h>
+#include <time.h>
 
-void jugar(int* n){
-    int y = *n ;
-    y = 2 * y;
-    *n = y;
-    printf("valor de n = %d", *n);
+void inicializa(){
+	time_t t;
+	srand(time(&t));
 }
 
 int main()
 {
-    int j = 5;
-    jugar(&j);
-    printf("valor de j = %d", j);
+    inicializa();
+    int j = rand() % 10;
+    printf("valor de j = %d\n", j);
 }
