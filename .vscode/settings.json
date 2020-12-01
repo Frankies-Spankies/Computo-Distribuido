@@ -1,0 +1,10 @@
+{
+    "files.associations": {
+        "__config": "c",
+        "__tuple": "c",
+        "chrono": "c",
+        "ios": "c",
+        "string": "c",
+        "vector": "c"
+    }
+}
