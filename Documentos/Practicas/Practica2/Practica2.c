@@ -45,17 +45,16 @@ void initiliaze_master(char **argv)
     leng = (*argv[1] - '0');
     array = (int *)malloc((leng) * sizeof(int));
     index_wanted = rand()%leng;
-    module = (leng-1)%size;
+    module = (leng)%(size-1);
 
     if (module != 0)
     {
         indx = module;
     }
-    printf("module: %d", module);
 
-    slice_size = (leng - module) / size;
+    slice_size = (leng - module) / (size-1);
 
-    int arr_result[leng][slice_size]; // TODO EN OTRA PARTE
+    int arr_result[leng][slice_size]; // TODO PONER EN OTRA PARTE
     for (int f = 0; f < leng; f++)
     {
         for (int c = 0; c < slice_size; c++)
@@ -139,6 +138,7 @@ void test_initiliaze_master(char **argv){
         //when
         initiliaze_master(argv);
         //then
+        printf("\nsize: %d", size);
         printf("\nleng: %d", leng);
         printf("\nindex_wanted: %d", index_wanted);
         printf("\nslice_size: %d", slice_size);
@@ -154,12 +154,13 @@ void test_data_search(char **argv)
     {
         initiliaze_master(argv);
         data_search();
+
         printf("\nArray ");
         for (int i = 0; i < leng; i++)
         {
             printf(" %d", array[i]);
         }
-        printf("wanted: %d, indx: %d\n", wanted, indx);
+        printf("\nwanted: %d, indx: %d, slice_size: %d\n", wanted, indx, slice_size);
     }
 }
 
@@ -170,7 +171,7 @@ int test(int argc, char **argv)
     MPI_Comm_size(MPI_COMM_WORLD, &size);
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
     //inicia prueba
-    test_initiliaze_master(argv);
+    test_data_search(argv);
     //f^un de prueba
 
     MPI_Finalize();
