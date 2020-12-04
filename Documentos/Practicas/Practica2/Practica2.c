@@ -22,7 +22,7 @@ int *arr_index;
 int leng;
 int *array;
 int index_wanted;
-int mod;
+int module=-1;
 
 //Implementacion ============>
 void inicializa()
@@ -44,17 +44,18 @@ void initiliaze_master(char **argv)
 {
     leng = (*argv[1] - '0');
     array = (int *)malloc((leng) * sizeof(int));
-    index_wanted = rand() % leng;
-    mod = leng % size;
+    index_wanted = rand()%leng;
+    module = (leng-1)%size;
 
-    if (mod =! 0)
+    if (module != 0)
     {
-        indx = mod;
+        indx = module;
     }
-    printf("indx: %d", indx);
-    slice_size = (leng - mod) / size;
+    printf("module: %d", module);
 
-    int arr_result[leng][slice_size];
+    slice_size = (leng - module) / size;
+
+    int arr_result[leng][slice_size]; // TODO EN OTRA PARTE
     for (int f = 0; f < leng; f++)
     {
         for (int c = 0; c < slice_size; c++)
@@ -96,7 +97,7 @@ void send_data_to_search()
         indx += slice_size;
     }
     //Busqueda individual en con residuos en mater
-    for (int l = 0; l < mod; l++)
+    for (int l = 0; l < module; l++)
     {
         arr_wanted[l] = array[l];
     }
@@ -130,6 +131,23 @@ int distributed_search(int argc, char **argv)
 }
 
 //Tests ===============>
+
+void test_initiliaze_master(char **argv){
+    if (rank == 0)
+    {
+        printf("\n####test_initiliaze_master####\n");
+        //when
+        initiliaze_master(argv);
+        //then
+        printf("\nleng: %d", leng);
+        printf("\nindex_wanted: %d", index_wanted);
+        printf("\nslice_size: %d", slice_size);
+        printf("\nmodule: %d", module);
+        printf("\nindx: %d\n", indx);
+    }
+    
+}
+
 void test_data_search(char **argv)
 {
     if (rank == 0)
@@ -137,7 +155,6 @@ void test_data_search(char **argv)
         initiliaze_master(argv);
         data_search();
         printf("\nArray ");
-
         for (int i = 0; i < leng; i++)
         {
             printf(" %d", array[i]);
@@ -146,9 +163,6 @@ void test_data_search(char **argv)
     }
 }
 
-void test_send_recive_data_to_search(int rank)
-{
-}
 
 int test(int argc, char **argv)
 {
@@ -156,7 +170,7 @@ int test(int argc, char **argv)
     MPI_Comm_size(MPI_COMM_WORLD, &size);
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
     //inicia prueba
-    test_data_search(argv);
+    test_initiliaze_master(argv);
     //f^un de prueba
 
     MPI_Finalize();
