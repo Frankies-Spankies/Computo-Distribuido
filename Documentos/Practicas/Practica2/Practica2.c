@@ -56,9 +56,7 @@ void initiliaze_master(char **argv)
 
     slice_size = (leng - module) / (size - 1);
 
-    
-
-    arr_wanted =(int *)malloc((slice_size) * sizeof(int));
+    arr_wanted = (int *)malloc((slice_size) * sizeof(int));
 
     int arr_result[leng][slice_size]; // TODO PONER EN OTRA PARTE
 
@@ -70,13 +68,11 @@ void initiliaze_master(char **argv)
         }
     }
 
-
-    for (int  i = 1; i < size; i++)
+    for (int i = 1; i < size; i++)
     {
         MPI_Send(&slice_size, 1, MPI_INT, i, SLICE_SIZE, MPI_COMM_WORLD);
     }
 }
-
 
 void data_search()
 {
@@ -95,7 +91,7 @@ void fill_arr_wanted()
 {
     for (int j = 0; j < slice_size; j++)
     {
-        arr_wanted[j] = array[indx+j];
+        arr_wanted[j] = array[indx + j];
     }
 }
 
@@ -105,7 +101,7 @@ void send_data_to_search()
     {
         fill_arr_wanted();
         MPI_Send(&indx, 1, MPI_INT, i, INDEX, MPI_COMM_WORLD);
-        MPI_Send(&arr_wanted, slice_size, MPI_INT, i, SLICE, MPI_COMM_WORLD);
+        MPI_Send(arr_wanted, slice_size, MPI_INT, i, SLICE, MPI_COMM_WORLD);
         indx += slice_size;
     }
     //Busqueda individual en con residuos en master
@@ -121,7 +117,7 @@ void recive_data_to_search()
 {
     MPI_Recv(&indx, 1, MPI_INT, 0, INDEX, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
 
-    MPI_Recv(&arr_wanted, slice_size, MPI_INT, 0, SLICE, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+    MPI_Recv(arr_wanted, slice_size, MPI_INT, 0, SLICE, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
     //printf("algo: %d", arr_wanted[0]);
 }
 
@@ -175,42 +171,35 @@ void test_data_search(char **argv)
 
 void test_send_recive_data_to_search(char **argv)
 {
+    //given
     if (rank == 0)
     {
-
         initiliaze_master(argv);
-        printf("Enviando slice_size");
-    }else
-    {
-        initiliaze_slave();
-        printf("Reciviendo slice_size");
-    }
-    
-    
-    if (rank == 0)
-    {
-        //given
-        data_search();
-        send_data_to_search();
-/*         printf("\nnodo: %d\n", rank);
-        printf("\nindx: %d\n", indx);
-        printf("\nslice_size: %d\n", slice_size); */
     }
     else
     {
-        //given
-        recive_data_to_search();
-        //then
-        printf("\nnodo: %d\n", rank);
-        printf("\nindx: %d\n", indx);
-        printf("\nslice_size: %d\n", slice_size);
-        printf("\n=====>Arr_wanted ");
-        printf("algo: %d", arr_wanted[1]);
-        for (int i = 0; i < slice_size; i++)
-        {
-            //printf(" %d", arr_wanted[i]);
-        }
+        initiliaze_slave();
     }
+
+    if (rank == 0)
+    {
+        data_search();
+        send_data_to_search();
+    }
+    else
+    {
+        recive_data_to_search();
+    }
+    //then
+    printf("\nnodo: %d\n", rank);
+    printf("\nindx: %d\n", indx);
+    printf("\nslice_size: %d\n", slice_size);
+    printf("\n=====>Arr_wanted ");
+    for (int i = 0; i < slice_size; i++)
+    {
+        printf(" %d", arr_wanted[i]);
+    }
+    printf("\n");
 }
 
 int test(int argc, char **argv)
@@ -220,7 +209,7 @@ int test(int argc, char **argv)
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
     //inicia prueba
     test_send_recive_data_to_search(argv);
-    //fun de prueba
+    //end de prueba
 
     MPI_Finalize();
     return 0;
