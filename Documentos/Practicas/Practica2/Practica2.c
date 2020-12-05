@@ -31,15 +31,20 @@ void inicializa()
     srand(time(&t));
 }
 
+void clean_arr_index()
+{
+    for (int i = 0; i < slice_size; i++)
+    {
+        arr_index[i] = -1;
+    } // inicializa todo arr_index a -1
+}
+
 void initiliaze_slave()
 {
     MPI_Recv(&slice_size, 1, MPI_INT, 0, SLICE_SIZE, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
     arr_wanted = (int *)malloc((slice_size) * sizeof(int));
     arr_index = (int *)malloc((slice_size) * sizeof(int));
-    for (int i = 0; i < slice_size; i++)
-    {
-        arr_index[i] = -1;
-    } // inicializa todo arr_index a -1
+    clean_arr_index();
 }
 
 void initiliaze_master(char **argv)
@@ -55,11 +60,14 @@ void initiliaze_master(char **argv)
     }
 
     slice_size = (leng - module) / (size - 1);
+    arr_index = (int *)malloc((slice_size) * sizeof(int));
+    clean_arr_index();
 
     arr_wanted = (int *)malloc((slice_size) * sizeof(int));
 
     int arr_result[leng][slice_size]; // TODO PONER EN OTRA PARTE
 
+    //Limpia arr_result
     for (int f = 0; f < leng; f++)
     {
         for (int c = 0; c < slice_size; c++)
@@ -68,6 +76,7 @@ void initiliaze_master(char **argv)
         }
     }
 
+    //Envia slice_size
     for (int i = 1; i < size; i++)
     {
         MPI_Send(&slice_size, 1, MPI_INT, i, SLICE_SIZE, MPI_COMM_WORLD);
@@ -95,6 +104,14 @@ void fill_arr_wanted()
     }
 }
 
+void re_initiliaze_master()
+{
+    indx = 0;
+    slice_size = module;
+    fill_arr_wanted();
+
+}
+
 void send_data_to_search()
 {
     for (int i = 1; i < size; i++)
@@ -102,15 +119,12 @@ void send_data_to_search()
         fill_arr_wanted();
         MPI_Send(&indx, 1, MPI_INT, i, INDEX, MPI_COMM_WORLD);
         MPI_Send(arr_wanted, slice_size, MPI_INT, i, SLICE, MPI_COMM_WORLD);
+        MPI_Send(&wanted, 1, MPI_INT, i, WANTED, MPI_COMM_WORLD);
         indx += slice_size;
     }
+
     //Busqueda individual en con residuos en master
-    for (int l = 0; l < module; l++)
-    {
-        arr_wanted[l] = array[l];
-    }
-    indx = 0;
-    slice_size = module;
+    re_initiliaze_master();
 }
 
 void recive_data_to_search()
@@ -118,7 +132,22 @@ void recive_data_to_search()
     MPI_Recv(&indx, 1, MPI_INT, 0, INDEX, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
 
     MPI_Recv(arr_wanted, slice_size, MPI_INT, 0, SLICE, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-    //printf("algo: %d", arr_wanted[0]);
+
+    MPI_Recv(&wanted, 1, MPI_INT, 0, WANTED, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+}
+
+void individual_search()
+{
+    int indx_count = 0;
+    for (int i = 0; i < slice_size; i++)
+    {
+        if (arr_wanted[i] == wanted)
+        {
+            arr_index[indx_count] = indx;
+            indx_count += 1;
+        }
+        indx += 1;
+    }
 }
 
 int distributed_search(int argc, char **argv)
@@ -193,11 +222,54 @@ void test_send_recive_data_to_search(char **argv)
     //then
     printf("\nnodo: %d\n", rank);
     printf("\nindx: %d\n", indx);
+    printf("\nwanted: %d\n", wanted);
     printf("\nslice_size: %d\n", slice_size);
     printf("\n=====>Arr_wanted ");
     for (int i = 0; i < slice_size; i++)
     {
         printf(" %d", arr_wanted[i]);
+    }
+    printf("\n");
+}
+
+void test_individual_search(char **argv)
+{
+    //given
+    if (rank == 0)
+    {
+        initiliaze_master(argv);
+    }
+    else
+    {
+        initiliaze_slave();
+    }
+
+    if (rank == 0)
+    {
+        data_search();
+        send_data_to_search();
+    }
+    else
+    {
+        recive_data_to_search();
+    }
+    individual_search();
+
+    //then
+    printf("\nnodo: %d\n", rank);
+    printf("\nwanted: %d\n", wanted);
+    printf("\nslice_size: %d\n", slice_size);
+    printf("\n=====>Arr_wanted ");
+    for (int i = 0; i < slice_size; i++)
+    {
+        printf(" %d", arr_wanted[i]);
+    }
+    printf("\n");
+
+    printf("\n=====>Arr_index ");
+    for (int i = 0; i < slice_size; i++)
+    {
+        printf(" %d", arr_index[i]);
     }
     printf("\n");
 }
@@ -208,7 +280,7 @@ int test(int argc, char **argv)
     MPI_Comm_size(MPI_COMM_WORLD, &size);
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
     //inicia prueba
-    test_send_recive_data_to_search(argv);
+    test_individual_search(argv);
     //end de prueba
 
     MPI_Finalize();
