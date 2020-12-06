@@ -23,6 +23,7 @@ int leng;
 int *array;
 int index_wanted;
 int module = -1;
+int global_slice_size;
 
 //Implementacion ============>
 void inicializa()
@@ -65,17 +66,6 @@ void initiliaze_master(char **argv)
 
     arr_wanted = (int *)malloc((slice_size) * sizeof(int));
 
-    int arr_result[leng][slice_size]; // TODO PONER EN OTRA PARTE
-
-    //Limpia arr_result
-    for (int f = 0; f < leng; f++)
-    {
-        for (int c = 0; c < slice_size; c++)
-        {
-            arr_result[f][c] = -1;
-        }
-    }
-
     //Envia slice_size
     for (int i = 1; i < size; i++)
     {
@@ -109,7 +99,6 @@ void re_initiliaze_master()
     indx = 0;
     slice_size = module;
     fill_arr_wanted();
-
 }
 
 void send_data_to_search()
@@ -124,6 +113,7 @@ void send_data_to_search()
     }
 
     //Busqueda individual en con residuos en master
+    global_slice_size = slice_size;
     re_initiliaze_master();
 }
 
@@ -150,14 +140,86 @@ void individual_search()
     }
 }
 
+void print_result(int arr_result[size][slice_size])
+{
+    printf("\n Resultado => ");
+    for (int f = 0; f < size; f++)
+    {
+        for (int c = 0; c < slice_size; c++)
+        {
+            if (arr_result[f][c] != -1)
+            {
+                printf(" %d", arr_result[f][c]);
+            }
+        }
+    }
+    printf("\n");
+}
+
+void recive_report_results()
+{
+    slice_size = global_slice_size;
+    int arr_result[size][slice_size];
+
+    //Recive resultados
+    for (int i = 1; i < size; i++)
+    {
+        MPI_Recv(arr_result[i], slice_size, MPI_INT, i, SEARCH_RESULT, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+    }
+
+    //recopila los propios
+    for (int j = 0; j < slice_size; j++)
+    {
+        arr_result[0][j] = arr_index[j];
+    }
+
+    //Imprime los resultados
+    print_result(arr_result);
+}
+
+void collect_results()
+{
+    if (rank != 0)
+    {
+        MPI_Send(arr_index, slice_size, MPI_INT, 0, SEARCH_RESULT, MPI_COMM_WORLD);
+    }
+    else
+    {
+        recive_report_results();
+    }
+}
+
+void print_data_generated()
+{
+    printf("\nArray ");
+    for (int i = 0; i < leng; i++)
+    {
+        printf(" %d", array[i]);
+    }
+    printf("\nwanted: %d, slice_size: %d\n", wanted, slice_size);
+}
+
 int distributed_search(int argc, char **argv)
 {
     MPI_Init(&argc, &argv);
     MPI_Comm_size(MPI_COMM_WORLD, &size);
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
-    data_search();
-    send_data_to_search();
+    if (rank == 0)
+    {
+        initiliaze_master(argv);
+        data_search();
+        print_data_generated();
+        send_data_to_search();
+    }
+    else
+    {
+        initiliaze_slave();
+        recive_data_to_search();
+    }
+
+    individual_search();
+    collect_results();
 
     MPI_Finalize();
     return 0;
@@ -238,19 +300,12 @@ void test_individual_search(char **argv)
     if (rank == 0)
     {
         initiliaze_master(argv);
-    }
-    else
-    {
-        initiliaze_slave();
-    }
-
-    if (rank == 0)
-    {
         data_search();
         send_data_to_search();
     }
     else
     {
+        initiliaze_slave();
         recive_data_to_search();
     }
     individual_search();
@@ -293,5 +348,5 @@ int test(int argc, char **argv)
 int main(int argc, char **argv)
 {
     inicializa();
-    test(argc, argv);
+    distributed_search(argc, argv);
 }
