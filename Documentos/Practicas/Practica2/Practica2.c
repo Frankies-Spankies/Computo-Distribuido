@@ -32,6 +32,14 @@ void inicializa()
     srand(time(&t));
 }
 
+void scan_wanted()
+{
+    printf("Cual es el valor a buscar:");
+    char buffer[100];
+    fgets(buffer, sizeof buffer, stdin);
+    sscanf(buffer, "%d", &wanted);
+}
+
 void clean_arr_index()
 {
     for (int i = 0; i < slice_size; i++)
@@ -50,7 +58,7 @@ void initiliaze_slave()
 
 void initiliaze_master(char **argv)
 {
-    leng = (*argv[1] - '0');
+    leng = atoi(argv[1]);
     array = (int *)malloc((leng) * sizeof(int));
     index_wanted = rand() % leng;
     module = (leng) % (size - 1);
@@ -207,6 +215,7 @@ int distributed_search(int argc, char **argv)
 
     if (rank == 0)
     {
+        //scan_wanted(); TODO arreglar o eliminar entrada
         initiliaze_master(argv);
         data_search();
         print_data_generated();
@@ -335,7 +344,7 @@ int test(int argc, char **argv)
     MPI_Comm_size(MPI_COMM_WORLD, &size);
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
     //inicia prueba
-    test_individual_search(argv);
+    test_initiliaze_master(argv);
     //end de prueba
 
     MPI_Finalize();
@@ -349,4 +358,5 @@ int main(int argc, char **argv)
 {
     inicializa();
     distributed_search(argc, argv);
+    //test(argc, argv);
 }
