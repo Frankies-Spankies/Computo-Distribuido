@@ -1,3 +1,8 @@
+/**
+ * Practica 2
+ * Francisco Daniel Gamez Garcia
+*/
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <mpi.h>
@@ -32,6 +37,9 @@ void inicializa()
     srand(time(&t));
 }
 
+/**
+ * Recive el elemento a bucar 
+  */
 void scan_wanted()
 {
     printf("Cual es el valor a buscar:");
@@ -40,6 +48,9 @@ void scan_wanted()
     sscanf(buffer, "%d", &wanted);
 }
 
+/**
+ * inicializa cada elemento del arreglo arr_index a -1  
+  */
 void clean_arr_index()
 {
     for (int i = 0; i < slice_size; i++)
@@ -48,6 +59,10 @@ void clean_arr_index()
     } // inicializa todo arr_index a -1
 }
 
+/**
+ * Configura los valores iniciales para las variable arr_wanted, arr_index y slice_size, nesesarios para 
+ * hacer la busqueda inidividual por nodos, en particular de los nodos esclavos
+  */
 void initiliaze_slave()
 {
     MPI_Recv(&slice_size, 1, MPI_INT, 0, SLICE_SIZE, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
@@ -56,6 +71,12 @@ void initiliaze_slave()
     clean_arr_index();
 }
 
+/**
+ * Configura los valores iniciales tales como la cantidad de elementos que le va tocar a cada nodo (slice_size), 
+ * los elementos que le que va a tener que procesar en nodo maestro en caso de que haya residio en la division numero_nodos/numero_elemntos_del_arreglo_generado
+ * Recopila los parametros pasados por entrada estandar
+ * Envia los valores nescesarios para que los nodos esclavos puedan inicializarse sin nesesidad de tomar los valores de la entrada estandar
+  */
 void initiliaze_master(char **argv)
 {
     leng = atoi(argv[1]);
@@ -81,6 +102,10 @@ void initiliaze_master(char **argv)
     }
 }
 
+/**
+ * Genera el arreglo sobre el cual se va a hacer la busqueda y 
+ * obtiene el valor que se va a buscar de manera aleatoria 
+  */
 void data_search()
 {
     for (int i = 0; i < leng; i++)
@@ -94,6 +119,9 @@ void data_search()
     }
 }
 
+/**
+ * Llena el arreglo arr_wanted en base al indice que le corresponda a cada nodo
+ */
 void fill_arr_wanted()
 {
     for (int j = 0; j < slice_size; j++)
@@ -102,6 +130,10 @@ void fill_arr_wanted()
     }
 }
 
+/**
+ * Configura los valores del nodo maestro para que pueda ser tratado como un nodo esclavo y 
+ * tambien realize una busqueda individual con los elementos que  
+  */
 void re_initiliaze_master()
 {
     indx = 0;
@@ -109,6 +141,10 @@ void re_initiliaze_master()
     fill_arr_wanted();
 }
 
+/**
+ * Envia a los nodos esclavos el elemento que tiene que buscar, el arreglo donde tiene que buscar y 
+ * el indice del arreglo original desde donde esta buscando 
+  */
 void send_data_to_search()
 {
     for (int i = 1; i < size; i++)
@@ -125,6 +161,9 @@ void send_data_to_search()
     re_initiliaze_master();
 }
 
+/**
+ * Recive los datos de busqueda enviados en el metodo send_data_to_search()
+  */
 void recive_data_to_search()
 {
     MPI_Recv(&indx, 1, MPI_INT, 0, INDEX, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
@@ -134,6 +173,10 @@ void recive_data_to_search()
     MPI_Recv(&wanted, 1, MPI_INT, 0, WANTED, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
 }
 
+/**
+ * Cada nodo busca de manera individual la en la seccion del arreglo que le toca buscar
+ * si encuntra un instancia del elemto buscado, guarda el indice en en arreglo arr_index
+  */
 void individual_search()
 {
     int indx_count = 0;
@@ -148,6 +191,9 @@ void individual_search()
     }
 }
 
+/**
+ * Metodo auxiliar para imprimir los resultados de busqueda que se le pasan por parametro
+  */
 void print_result(int arr_result[size][slice_size])
 {
     printf("\n Resultado => ");
@@ -164,6 +210,10 @@ void print_result(int arr_result[size][slice_size])
     printf("\n");
 }
 
+/**
+ * Metodo que recive los resultados de busqueda de cada nodo, y los guarda en un arreglo bidimencional
+ * donde cada renglon son los resultados de busqueda del nodo cuyo identificador coincide con el indice del renglon
+  */
 void recive_report_results()
 {
     slice_size = global_slice_size;
@@ -185,6 +235,11 @@ void recive_report_results()
     print_result(arr_result);
 }
 
+/**
+ * Metodo que recopila los resultados de busqueda:
+ * Los nodos esclavos envian sus resultados al nodo maestro
+ * El nodo maestro recive los resultados, los recopila y los imprime en pantalla
+  */
 void collect_results()
 {
     if (rank != 0)
@@ -197,6 +252,10 @@ void collect_results()
     }
 }
 
+/**
+ * Metodo auxiliar que imprime el aarreglo generado aleatoriamente, el elemento a buscar, y 
+ * la cantidad de elementos que le toca procesar a cada nodo esclavo   
+  */
 void print_data_generated()
 {
     printf("\nArray ");
@@ -207,6 +266,9 @@ void print_data_generated()
     printf("\nwanted: %d, slice_size: %d\n", wanted, slice_size);
 }
 
+/**
+ * Metodo que realiza una búsqueda distribuida sobre un arreglon generado de manera aleatoria
+  */
 int distributed_search(int argc, char **argv)
 {
     MPI_Init(&argc, &argv);
